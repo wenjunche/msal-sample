@@ -23,4 +23,6 @@ export const graphConfig = {
     graphMeEndpoint: "https://graph.microsoft.com/v1.0/me",
     graphOrgEndpoint: "https://graph.microsoft.com/v1.0/organization",
     graphServicePrincipalsEndpoint: "https://graph.microsoft.com/v1.0/servicePrincipals",
+    graphServicePrincipalAssignments: "https://graph.microsoft.com/v1.0/servicePrincipals/{id}/appRoleAssignedTo",
+    graphUserByIdEndpoint: "https://graph.microsoft.com/v1.0/users/{id}",
 };

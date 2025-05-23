@@ -56,8 +56,22 @@ async function getTenantId() {
 const HereAttributeSet = 'WCustomAttr1';
 const HereEnableAttribute = 'EBEnabled';
 
+type EBCustomSecurityAttributes = {
+    EBEnabled: boolean;
+};
+
+type ServicePrincipal = {
+    appId: string;
+    displayName: string;
+    customSecurityAttributes: EBCustomSecurityAttributes;
+    users: {
+        username: string;
+        displayName: string;
+    }[];
+};
 
 async function searchServicePrincipals() {
+    const principals: ServicePrincipal[] = [];
     const url = new URL(graphConfig.graphServicePrincipalsEndpoint);
     url.searchParams.append("$filter", `customSecurityAttributes/${HereAttributeSet}/${HereEnableAttribute} eq true`);
     url.searchParams.append("$select", "id,appId,displayName,customSecurityAttributes");
@@ -65,5 +79,37 @@ async function searchServicePrincipals() {
     headers.append("ConsistencyLevel", "eventual");
     const resp = await callMsGraph(url.toString(), headers);
     console.log('Service Principals', resp.value);
+    for (const sp of resp.value) {
+        const users: ServicePrincipal["users"] = [];
+        await getServicePrincipalAssignments(sp.id, users);
+        principals.push({
+            appId: sp.appId,
+            displayName: sp.displayName,
+            customSecurityAttributes: sp.customSecurityAttributes[HereAttributeSet],
+            users: [],
+        });
+    }
+    console.log('Service Principals with users', principals);
+}
+
+async function getServicePrincipalAssignments(id: string, users: ServicePrincipal["users"]) {
+    const url = new URL(graphConfig.graphServicePrincipalAssignments.replace("{id}", id));
+    const resp = await callMsGraph(url.toString());
+    console.log('Service Principal Assignments', resp.value);
+    for (const assignment of resp.value) {
+        const principalId = assignment.principalId;
+        const user = await getServiceUserByPrincipalId(principalId);
+        users.push({
+            username: user.userPrincipalName,
+            displayName: user.displayName,
+        });
+    }
+}
+
+async function getServiceUserByPrincipalId(principalId: string) {
+    const url = new URL(graphConfig.graphUserByIdEndpoint.replace("{id}", principalId));
+    const resp = await callMsGraph(url.toString());
+    console.log('Service User', resp);
+    return resp;
 }
 
