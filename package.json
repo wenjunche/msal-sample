@@ -22,7 +22,6 @@
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
-        "build:package": "cd ../../../ && npm run build:all --workspace=lib/msal-react",
         "test:e2e": "jest",
         "eject": "react-scripts eject"
     },
