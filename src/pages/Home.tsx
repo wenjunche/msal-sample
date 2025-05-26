@@ -10,6 +10,7 @@ export function Home() {
           <AuthenticatedTemplate>
             <ButtonGroup orientation="vertical">
               <Button component={RouterLink} to="/profile" variant="contained" color="primary">Request Profile Information</Button>
+              <Button component={RouterLink} to="/principal" variant="contained" color="primary">Request Application Infomation</Button>
             </ButtonGroup>
           </AuthenticatedTemplate>
 

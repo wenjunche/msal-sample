@@ -2,8 +2,6 @@ import { loginRequest, graphConfig } from "../authConfig";
 import { msalInstance } from "../index";
 
 export async function callMeGraph() {
-    await getTenantId();
-    await searchServicePrincipals();
     return callMsGraph(graphConfig.graphMeEndpoint);
 }
 
@@ -48,11 +46,6 @@ async function callMsGraph(url: string, requestHeaders?: Headers) {
         .catch(error => console.log(error));
 }
 
-async function getTenantId() {
-    const resp = await callMsGraph(graphConfig.graphOrgEndpoint);
-    console.log('tenant ID', resp.value[0]?.id);
-}
-
 const HereAttributeSet = 'WCustomAttr1';
 const HereEnableAttribute = 'EBEnabled';
 
@@ -60,7 +53,7 @@ type EBCustomSecurityAttributes = {
     EBEnabled: boolean;
 };
 
-type ServicePrincipal = {
+export type ServicePrincipal = {
     appId: string;
     displayName: string;
     customSecurityAttributes: EBCustomSecurityAttributes;
@@ -68,9 +61,27 @@ type ServicePrincipal = {
         username: string;
         displayName: string;
     }[];
+    url?: string;
 };
 
-async function searchServicePrincipals() {
+export async function callServicePrincipalGraph(): Promise<ServicePrincipal[]> {
+    const tenantId = await getTenantId();
+    const principals = await searchServicePrincipals();
+    principals.forEach((sp) => {
+        sp.url = `https://launcher.myapps.microsoft.com/api/signin/${sp.appId}?tenantId=${tenantId}`;
+    });
+    console.log('Service Principals with URLs', principals);
+    return principals;
+}
+
+async function getTenantId(): Promise<string | undefined> {
+    const resp = await callMsGraph(graphConfig.graphOrgEndpoint);
+    const tenantId = resp.value[0]?.id;
+    console.log('Tenant ID', tenantId);
+    return tenantId;
+}
+
+async function searchServicePrincipals(): Promise<ServicePrincipal[]> {
     const principals: ServicePrincipal[] = [];
     const url = new URL(graphConfig.graphServicePrincipalsEndpoint);
     url.searchParams.append("$filter", `customSecurityAttributes/${HereAttributeSet}/${HereEnableAttribute} eq true`);
@@ -86,10 +97,12 @@ async function searchServicePrincipals() {
             appId: sp.appId,
             displayName: sp.displayName,
             customSecurityAttributes: sp.customSecurityAttributes[HereAttributeSet],
-            users: [],
+            users,
+            url: sp.url,
         });
     }
     console.log('Service Principals with users', principals);
+    return principals;
 }
 
 async function getServicePrincipalAssignments(id: string, users: ServicePrincipal["users"]) {
