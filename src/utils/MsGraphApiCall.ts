@@ -54,14 +54,24 @@ type EBCustomSecurityAttributes = {
     Domains?: string[];
 };
 
+type ServiceUser = {
+    username: string;
+    displayName: string;
+    givenName: string;
+    surname: string;
+}
+
+type ServiceGroup = {
+    displayName: string;
+    members: ServiceUser[];
+}
+
 export type ServicePrincipal = {
     appId: string;
     displayName: string;
     customSecurityAttributes: EBCustomSecurityAttributes;
-    users: {
-        username: string;
-        displayName: string;
-    }[];
+    users: ServiceUser[];
+    groups: ServiceGroup[];
     url: string;
 };
 
@@ -93,12 +103,14 @@ async function searchServicePrincipals(): Promise<ServicePrincipal[]> {
     console.log('Service Principals', resp.value);
     for (const sp of resp.value) {
         const users: ServicePrincipal["users"] = [];
-        await getServicePrincipalAssignments(sp.id, users);
+        const groups: ServicePrincipal["groups"] = [];
+        await getServicePrincipalAssignments(sp.id, users, groups);
         principals.push({
             appId: sp.appId,
             displayName: sp.displayName,
             customSecurityAttributes: sp.customSecurityAttributes[HereAttributeSet],
             users,
+            groups,
             url: sp.url,
         });
     }
@@ -106,17 +118,35 @@ async function searchServicePrincipals(): Promise<ServicePrincipal[]> {
     return principals;
 }
 
-async function getServicePrincipalAssignments(id: string, users: ServicePrincipal["users"]) {
+async function getServicePrincipalAssignments(id: string, users: ServicePrincipal["users"], groups: ServicePrincipal["groups"] = []) {
     const url = new URL(graphConfig.graphServicePrincipalAssignments.replace("{id}", id));
     const resp = await callMsGraph(url.toString());
     console.log('Service Principal Assignments', resp.value);
     for (const assignment of resp.value) {
         const principalId = assignment.principalId;
-        const user = await getServiceUserByPrincipalId(principalId);
-        users.push({
-            username: user.userPrincipalName,
-            displayName: user.displayName,
-        });
+        if (assignment.principalType === "User") {
+            const user = await getServiceUserByPrincipalId(principalId);
+            users.push({
+                username: user.userPrincipalName,
+                displayName: user.displayName,
+                givenName: user.givenName,
+                surname: user.surname,
+            });
+        } else if (assignment.principalType === "Group") {
+            const group = await getServiceGroupByPrincipalId(principalId);
+            const members = await getServiceGroupMembersByPrincipalId(principalId);
+            const groupMembers: ServiceUser[] = members.value.map((member: any) => ({
+                username: member.userPrincipalName,
+                displayName: member.displayName,
+                givenName: member.givenName,
+                surname: member.surname,
+            }));
+            groups.push({
+                displayName: group.displayName,
+                members: groupMembers,
+            });
+            // @TODO: how to handle groups and group members if not exist in EB ?
+        }   
     }
 }
 
@@ -127,3 +157,16 @@ async function getServiceUserByPrincipalId(principalId: string) {
     return resp;
 }
 
+async function getServiceGroupByPrincipalId(principalId: string) {
+    const url = new URL(graphConfig.graphGroupByIdEndpoint.replace("{id}", principalId));
+    const resp = await callMsGraph(url.toString());
+    console.log('Service Group', resp);
+    return resp;
+}
+
+async function getServiceGroupMembersByPrincipalId(principalId: string) {
+    const url = new URL(graphConfig.graphGroupMembersByIdEndpoint.replace("{id}", principalId));
+    const resp = await callMsGraph(url.toString());
+    console.log('Service Group', resp);
+    return resp;
+}
