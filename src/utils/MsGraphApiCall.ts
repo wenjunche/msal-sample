@@ -51,6 +51,7 @@ const HereEnableAttribute = 'EBEnabled';
 
 type EBCustomSecurityAttributes = {
     EBEnabled: boolean;
+    Domains?: string[];
 };
 
 export type ServicePrincipal = {
@@ -61,7 +62,7 @@ export type ServicePrincipal = {
         username: string;
         displayName: string;
     }[];
-    url?: string;
+    url: string;
 };
 
 export async function callServicePrincipalGraph(): Promise<ServicePrincipal[]> {

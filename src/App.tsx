@@ -37,9 +37,9 @@ function App({ pca }: AppProps) {
 function Pages() {
     return (
         <Routes>
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/principal" element={<Principal />} />
-            <Route path="/" element={<Home />} />
+            <Route path="/build/profile" element={<Profile />} />
+            <Route path="/build/principal" element={<Principal />} />
+            <Route path="/build/" element={<Home />} />
         </Routes>
     );
 }

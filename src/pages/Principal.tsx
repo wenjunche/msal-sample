@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // Msal imports
 import { MsalAuthenticationTemplate, useMsal } from "@azure/msal-react";
@@ -14,6 +14,8 @@ import { callMeGraph, callServicePrincipalGraph, ServicePrincipal } from "../uti
 
 // Material-ui imports
 import Paper from "@mui/material/Paper";
+import { Button } from "@mui/material";
+import { syncApplications } from "../utils/EBApiCall";
 
 const PrincipalContent = () => {
     const { instance, inProgress } = useMsal();
@@ -35,9 +37,17 @@ const PrincipalContent = () => {
         }
     }, [inProgress, instance, principalData]);
   
+    const handleClick = useCallback(() => {
+        console.log("Syncing apps...");
+        syncApplications(principalData || []);
+    }, [ principalData ]);
+
     return (
         <Paper>
             { principalData ? <PrincipalData principalData={principalData} /> : null }
+                <Button variant="contained" onClick={handleClick}>
+                    Sync apps
+                </Button>
         </Paper>
     );
 };
