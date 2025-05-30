@@ -126,6 +126,7 @@ async function getServicePrincipalAssignments(id: string, users: ServicePrincipa
         const principalId = assignment.principalId;
         if (assignment.principalType === "User") {
             const user = await getServiceUserByPrincipalId(principalId);
+            // @TODO: how to handle users if not exist in EB ?
             users.push({
                 username: user.userPrincipalName,
                 displayName: user.displayName,
