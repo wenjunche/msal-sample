@@ -12,6 +12,7 @@ import { PageLayout } from "./ui-components/PageLayout";
 import { Home } from "./pages/Home";
 import { Profile } from "./pages/Profile";
 import { Principal } from "./pages/Principal";
+import { ContentStore } from "./pages/ContentStore";
 
 type AppProps = {
     pca: IPublicClientApplication;
@@ -39,6 +40,7 @@ function Pages() {
         <Routes>
             <Route path="/build/profile" element={<Profile />} />
             <Route path="/build/principal" element={<Principal />} />
+            <Route path="/build/contentstore" element={<ContentStore />} />
             <Route path="/build/" element={<Home />} />
         </Routes>
     );

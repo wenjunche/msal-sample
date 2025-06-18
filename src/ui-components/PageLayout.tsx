@@ -9,7 +9,7 @@ export const PageLayout: React.FC<Props> = ({children}) => {
     return (
         <>
             <NavBar />
-            <Typography variant="h5" align="center">Welcome to the Microsoft Authentication Library For React Quickstart</Typography>
+            <Typography variant="h5" align="center">Enterprise Browser Admain App for Entra Integration</Typography>
             <br/>
             <br/>
             {children}

@@ -15,11 +15,13 @@ import { callMeGraph, callServicePrincipalGraph, ServicePrincipal } from "../uti
 // Material-ui imports
 import Paper from "@mui/material/Paper";
 import { Button } from "@mui/material";
-import { syncApplications } from "../utils/EBApiCall";
+import { ContentItem, getAllApps, getEntraApplications, syncApplications } from "../utils/EBApiCall";
+import { ContentData } from "../ui-components/ContentData";
 
-const PrincipalContent = () => {
+const StoreContent = () => {
     const { instance, inProgress } = useMsal();
     const [principalData, setPrincipalData] = useState<null|ServicePrincipal[]>(null);
+    const [contentData, setContentData] = useState<null|ServicePrincipal[]>(null);
 
     useEffect(() => {
         if (!principalData && inProgress === InteractionStatus.None) {
@@ -33,26 +35,34 @@ const PrincipalContent = () => {
                     });
                 }
             });
-            
         }
-    }, [inProgress, instance, principalData]);
+        if (!contentData && inProgress === InteractionStatus.None) {
+            getEntraApplications().then(response => {
+                setContentData(response);
+            }).catch((e) => {
+                console.error("Error fetching content data: ", e);
+            });
+        }
+    }, [inProgress, instance, principalData, contentData]);
   
     const handleClick = useCallback(() => {
         console.log("Syncing apps...");
-        syncApplications(principalData || []);
-    }, [ principalData ]);
+//        syncApplications(contentData || []);
+    }, [ contentData ]);
 
     return (
         <Paper>
-            { principalData ? <PrincipalData principalData={principalData} /> : null }
+            { contentData ? <ContentData contentData={contentData} /> : null }
                 <Button variant="contained" onClick={handleClick}>
-                    Sync apps to EB
+                    Sync apps to Entra
                 </Button>
         </Paper>
     );
 };
 
-export function Principal() {
+
+
+export function ContentStore() {
     const authRequest = {
         ...loginRequest
     };
@@ -64,7 +74,7 @@ export function Principal() {
             errorComponent={ErrorComponent} 
             loadingComponent={Loading}
         >
-            <PrincipalContent />
+            <StoreContent />
         </MsalAuthenticationTemplate>
       )
 };

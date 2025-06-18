@@ -70,6 +70,7 @@ type CommonContentItemProps = {
     icon: string;
 };
 export type ContentItem = {
+    domains: string[];
     access: {
         subjectIds: string[];
         primitiveIds: string[];
@@ -91,7 +92,7 @@ export type ContentItem = {
     }[];
 } & CommonContentItemProps;
 
-async function getAllApps(): Promise<ContentItem[]> {
+export async function getAllApps(): Promise<ContentItem[]> {
     const response = await handleAPIRequest<ContentItem[]>(`/platform/api/admin/apps`, {
         method: 'GET',
         headers: defaultHeaders,
@@ -205,3 +206,43 @@ type User = {
 async function getAllUsers(): Promise<User[]> {
     return handleAPIRequest(`/platform/api/admin/users`, { method: 'GET', headers: defaultHeaders });
 }
+
+export async function getEntraApplications(): Promise<ServicePrincipal[]> {
+    const existingApps = await getAllApps();
+    const ebUsers = await getAllUsers();
+    const entraApps = existingApps.filter((app) => app.customLabel === 'Entra Enabled').map((app) => {
+        return mapAppToServicePrincipal(app, ebUsers);
+    });
+    console.log("Entra Enabled Applications: ", entraApps);
+    return entraApps
+}
+
+
+export function mapAppToServicePrincipal(content: ContentItem, ebUsers: User[]): ServicePrincipal {
+    const principal: ServicePrincipal = {
+        appId: content.id,
+        displayName: content.name,
+        loginUrl: content.domains[0] || '',
+        users: [],
+        groups: [],
+        customSecurityAttributes: {
+            Domains: content.domains,
+            EBEnabled: true,
+        },
+        url: ""
+    };
+    
+    content.access.subjectIds.forEach((subjectId) => {
+        const foundUser = ebUsers.find((user) => user.uuid === subjectId);
+        if (foundUser) {
+            principal.users.push({
+                username: foundUser.username,
+                displayName: foundUser.firstName ? `${foundUser.firstName} ${foundUser.lastName}` : foundUser.username,
+                givenName: foundUser.firstName || '',
+                surname: foundUser.lastName || '',
+            });
+        }
+    });
+    return principal;
+}
+

@@ -73,6 +73,7 @@ export type ServicePrincipal = {
     users: ServiceUser[];
     groups: ServiceGroup[];
     url: string;
+    loginUrl?: string; // Optional, fir Linked apps in Entra
 };
 
 export async function callServicePrincipalGraph(): Promise<ServicePrincipal[]> {
@@ -171,3 +172,26 @@ async function getServiceGroupMembersByPrincipalId(principalId: string) {
     console.log('Service Group', resp);
     return resp;
 }
+
+export async function syncApplications(principals: ServicePrincipal[]): Promise<void> {
+    const users = await getAllUsers();
+    const existingApps = await getAllApps();
+
+    for (const principal of principals) {
+        if (principal.customSecurityAttributes && principal.customSecurityAttributes.EBEnabled) {
+            const existingApp = existingApps.find((app) => app.contentId === principal.appId);
+            if (existingApp) {
+                console.log(`Application already exists: ${principal.displayName} (${principal.appId})`);
+                continue; // Skip if the app already exists
+            }
+            console.log(`Syncing application: ${principal.displayName} (${principal.appId})`);
+            const app = mapServicePrincipalToApp(principal, users);
+            console.log(`Creating app with payload:`, app);
+            await createApp(app);
+        } else {
+            console.log(`Skipping application: ${principal.displayName} (${principal.appId}) - EBEnabled is false`);
+        }
+    };
+    console.log("Application sync completed.");
+}
+
