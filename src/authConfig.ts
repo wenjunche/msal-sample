@@ -15,15 +15,17 @@ export const msalConfig: Configuration = {
 
 // Add here scopes for id token to be used at MS Identity Platform endpoints.
 export const loginRequest: PopupRequest = {
-    scopes: ["User.Read", "Directory.Read.All", "Application.Read.All", "CustomSecAttributeAssignment.Read.All"],
+    scopes: ["User.Read", "Directory.Read.All", "Application.ReadWrite.All", "CustomSecAttributeAssignment.ReadWrite.All"],
 };
 
 // Add here the endpoints for MS Graph API services you would like to use.
 export const graphConfig = {
     graphMeEndpoint: "https://graph.microsoft.com/v1.0/me",
     graphOrgEndpoint: "https://graph.microsoft.com/v1.0/organization",
+    graphServiceApplicationsEndpoint: "https://graph.microsoft.com/v1.0/applications",
     graphServicePrincipalsEndpoint: "https://graph.microsoft.com/v1.0/servicePrincipals",
     graphServicePrincipalAssignments: "https://graph.microsoft.com/v1.0/servicePrincipals/{id}/appRoleAssignedTo",
+    graphUsersEndpoint: "https://graph.microsoft.com/v1.0/users",
     graphUserByIdEndpoint: "https://graph.microsoft.com/v1.0/users/{id}",
     graphGroupByIdEndpoint: "https://graph.microsoft.com/v1.0/groups/{id}",
     graphGroupMembersByIdEndpoint: "https://graph.microsoft.com/v1.0/groups/{id}/members",

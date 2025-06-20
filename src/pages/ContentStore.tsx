@@ -6,11 +6,9 @@ import { InteractionStatus, InteractionType, InteractionRequiredAuthError, Accou
 import { loginRequest } from "../authConfig";
 
 // Sample app imports
-import { ProfileData, GraphData } from "../ui-components/ProfileData";
-import { PrincipalData  } from "../ui-components/PrincipalData";
 import { Loading } from "../ui-components/Loading";
 import { ErrorComponent } from "../ui-components/ErrorComponent";
-import { callMeGraph, callServicePrincipalGraph, ServicePrincipal } from "../utils/MsGraphApiCall";
+import { callServicePrincipalGraph, ServicePrincipal, syncApplicationsToEntra } from "../utils/MsGraphApiCall";
 
 // Material-ui imports
 import Paper from "@mui/material/Paper";
@@ -46,8 +44,8 @@ const StoreContent = () => {
     }, [inProgress, instance, principalData, contentData]);
   
     const handleClick = useCallback(() => {
-        console.log("Syncing apps...");
-//        syncApplications(contentData || []);
+        console.log("Syncing apps to Entra...");
+        syncApplicationsToEntra(contentData || []);
     }, [ contentData ]);
 
     return (
