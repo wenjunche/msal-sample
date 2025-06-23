@@ -13,7 +13,7 @@ import { callServicePrincipalGraph, ServicePrincipal, syncApplicationsToEntra } 
 // Material-ui imports
 import Paper from "@mui/material/Paper";
 import { Button } from "@mui/material";
-import { ContentItem, getAllApps, getEntraApplications, syncApplications } from "../utils/EBApiCall";
+import { getApplicationsForEntra  } from "../utils/EBApiCall";
 import { ContentData } from "../ui-components/ContentData";
 
 const StoreContent = () => {
@@ -35,7 +35,7 @@ const StoreContent = () => {
             });
         }
         if (!contentData && inProgress === InteractionStatus.None) {
-            getEntraApplications().then(response => {
+            getApplicationsForEntra().then(response => {
                 setContentData(response);
             }).catch((e) => {
                 console.error("Error fetching content data: ", e);

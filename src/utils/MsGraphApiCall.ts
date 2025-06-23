@@ -1,3 +1,4 @@
+import { log } from "console";
 import { loginRequest, graphConfig } from "../authConfig";
 import { msalInstance } from "../index";
 
@@ -72,11 +73,12 @@ type ServiceGroup = {
     members: ServiceUser[];
 }
 
-export type Application = {
+export type EntraApplication = {
     id?: string; // created by Entra
     appId?: string; // created by Entra
     displayName: string;
     tags?: string[];
+    appRoles?: any[];
 };
 
 export type ServicePrincipal = {
@@ -220,6 +222,16 @@ export async function syncApplicationsToEntra(principals: ServicePrincipal[]): P
             tags: [
                 `EBUuid-${principal.appId}`,
             ],
+            appRoles: [
+                {
+                    allowedMemberTypes: [ 'User' ], // Users and groups can be assigned
+                    description: 'User',
+                    displayName: 'User',
+                    id: crypto.randomUUID(), // Generate a unique GUID for each role
+                    isEnabled: true,
+                    value: 'user' // Programmatic value of the role
+                },
+            ]
         });
         if (!app) {
             console.error(`Failed to create application: ${principal.displayName} (${principal.appId})`);
@@ -231,20 +243,32 @@ export async function syncApplicationsToEntra(principals: ServicePrincipal[]): P
             console.error(`Failed to create service principal for application: ${principal.displayName} (${principal.appId})`);
             continue; // Skip if the service principal creation failed
         }
+        for (const user of principal.users || []) {
+            console.log(`Assigning user ${user.username} to service principal ${servicePrincipal.displayName}`);
+            const entraUser = await searchUserByUsername(user.username);
+            if (entraUser) {
+                await grantServicePrincipalUserAssignments(entraUser, app, servicePrincipal);
+            }
+        };
+        for (const group of principal.groups || []) {
+            //@TODO handle group assignments
+        }
     };
     console.log("Application sync completed.");
 }
 
-async function createApplication(application: Application): Promise<Application | undefined> {
+async function createApplication(application: EntraApplication): Promise<EntraApplication | undefined> {
     console.log('Creating application', application);
     const url = new URL(graphConfig.graphServiceApplicationsEndpoint);
     const resp = await callMsGraph({url: url.toString(), method: 'POST', payload: application});
-    console.log('created application', resp.value);
+    console.log('created application', resp);
     if (resp.id) {
         return {
             id: resp.id,
             appId: resp.appId,
             displayName: resp.displayName,
+            appRoles: resp.appRoles,
+            tags: resp.tags,
         }
     }
 }
@@ -255,6 +279,7 @@ async function createServicePrincipal(principal: ServicePrincipal): Promise<Serv
         appId: principal.entraAppId,
         displayName: principal.displayName, 
         appRoleAssignmentRequired: true,
+        loginUrl: principal.loginUrl,
         servicePrincipalType: 'Application',
         preferredSingleSignOnMode: 'notSupported',
         tags: [
@@ -276,22 +301,33 @@ async function createServicePrincipal(principal: ServicePrincipal): Promise<Serv
     }
 }
 
-type User = {
+type EntraUser = {
     id: string;
     userPrincipalName: string;
 }
 
-async function searchUserByUsername(username: string): Promise<User | undefined> {
-    const principals: ServicePrincipal[] = [];
+async function searchUserByUsername(username: string): Promise<EntraUser | undefined> {
     const url = new URL(graphConfig.graphUsersEndpoint);
     url.searchParams.append("$filter", `userPrincipalName eq '${username}'`);
     const headers = new Headers();
     const resp = await callMsGraph({url: url.toString(), headers});
     console.log('User by username', resp.value);
-    if (resp.value) {
+    if (resp.value?.length === 1) {
         return {
-            id: resp.value.id,
-            userPrincipalName: resp.value.userPrincipalName,
+            id: resp.value[0].id,
+            userPrincipalName: resp.value[0].userPrincipalName,
         }
     }
+}
+
+async function grantServicePrincipalUserAssignments(user: EntraUser, app: EntraApplication, principal: ServicePrincipal): Promise<void> {
+    const url = new URL(graphConfig.graphServicePrincipalAssignments.replace("{id}", principal.id!));
+    const payload = {
+        principalId: user.id,
+        resourceId: principal.id,
+        appRoleId: app.appRoles?.[0]?.id, // Assuming the first app role is the one to assign
+    };
+    console.log('Granting service principal assignment', payload);
+    const resp = await callMsGraph({url: url.toString(), method: 'POST', payload});
+    console.log('Service principal assignment granted', resp);
 }

@@ -207,7 +207,7 @@ async function getAllUsers(): Promise<User[]> {
     return handleAPIRequest(`/platform/api/admin/users`, { method: 'GET', headers: defaultHeaders });
 }
 
-export async function getEntraApplications(): Promise<ServicePrincipal[]> {
+export async function getApplicationsForEntra(): Promise<ServicePrincipal[]> {
     const existingApps = await getAllApps();
     const ebUsers = await getAllUsers();
     const entraApps = existingApps.filter((app) => app.customLabel === 'Entra Enabled').map((app) => {
@@ -235,7 +235,7 @@ export function mapAppToServicePrincipal(content: ContentItem, ebUsers: User[]):
     content.access.subjectIds.forEach((subjectId) => {
         const foundUser = ebUsers.find((user) => user.uuid === subjectId);
         if (foundUser) {
-            principal.users.push({
+            principal.users!.push({
                 username: foundUser.username,
                 displayName: foundUser.firstName ? `${foundUser.firstName} ${foundUser.lastName}` : foundUser.username,
                 givenName: foundUser.firstName || '',
