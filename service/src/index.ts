@@ -27,34 +27,34 @@ type GraphResponse<T> = {
   value: T[];
 };
 
+async function fetchAccessToken() {
+  const clientCredentialRequest = {
+    scopes: ['https://graph.microsoft.com/.default'],
+  };
+
+  console.log('✅ Acquiring token via client credentials flow...');
+
+  const response = await msalClient.acquireTokenByClientCredential(clientCredentialRequest);
+
+  if (!response || !response.accessToken) {
+    throw new Error('Failed to acquire a token from Entra ID.');
+  }
+
+  console.log('✅ Successfully acquired access token.', response.accessToken);
+  return response.accessToken;
+};
+
 /**
  * Acquires an access token using the client credentials flow and calls the Graph API.
  */
-export async function fetchUsersFromGraph() {
+export async function fetchUsersFromGraph(accessToken: string) {
   try {
-    // Specify the scopes for the permissions you need
-    const clientCredentialRequest = {
-      // need to grant the app (client ID) the following API permissions: User.Read.All, Group.Read.All.  also, Grant admin consent for the permissions 
-      scopes: ['https://graph.microsoft.com/.default'],
-    };
-
-    console.log('✅ Acquiring token via client credentials flow...');
-
-    // Acquire the token silently first (if cached), then via request if needed
-    const response = await msalClient.acquireTokenByClientCredential(clientCredentialRequest);
-
-    if (!response || !response.accessToken) {
-      throw new Error('Failed to acquire a token from Entra ID.');
-    }
-
-    console.log('✅ Successfully acquired access token.', response.accessToken);
-
     // Use the access token to call the Microsoft Graph API
     const usersEndpoint = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName';
     const apiResponse = await fetch(usersEndpoint, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${response.accessToken}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -76,7 +76,42 @@ export async function fetchUsersFromGraph() {
   }
 }
 
+/**
+ * Acquires an access token using the client credentials flow and calls the Graph API.
+ */
+export async function fetchGroupsFromGraph(accessToken: string) {
+  try {
+    // Use the access token to call the Microsoft Graph API
+    const groupsEndpoint = 'https://graph.microsoft.com/v1.0/groups?$select=id,displayName';
+    const apiResponse = await fetch(groupsEndpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!apiResponse.ok) {
+      throw new Error(`Graph API call failed with status: ${apiResponse.status} ${apiResponse.statusText}`);
+    }
+
+    const groupData = await apiResponse.json() as GraphResponse<GraphUser>;
+    console.log(`Successfully fetched ${groupData.value.length} users from Graph.`);
+
+    // In a real microservice, you would process this data now.
+    groupData.value.forEach((group: any) => {
+      console.log(`- Group: ${group.displayName} (${group.id})`);
+    });
+
+  } catch (error) {
+    console.error('❌ Error during Graph API call:', error);
+  }
+}
+
+
 // Example usage
 (async () => {
-  await fetchUsersFromGraph();
+  const accessToken = await fetchAccessToken();
+  await fetchUsersFromGraph(accessToken);
+  await fetchGroupsFromGraph(accessToken);
 })();
