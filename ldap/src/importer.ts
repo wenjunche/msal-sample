@@ -24,7 +24,7 @@ export async function importUsers() {
     const searchOptions = {
       scope: 'sub' as const, // 'sub' for subtree search (all objects under baseDn)
       filter: '(objectClass=user)', // Filter for user objects
-      attributes: ['cn', 'sAMAccountName', 'userPrincipalName', 'mail'], // Attributes to retrieve
+      attributes: ['cn', 'sAMAccountName', 'userPrincipalName', 'mail', 'givenName', 'sn', 'dn', 'msDS-aadObjectId'], // Attributes to retrieve
       paged: { // Use paged search to handle large numbers of users
         pageSize: 1000,
       },
@@ -37,7 +37,7 @@ export async function importUsers() {
     
     // In a real microservice, you would now process and store this user data.
     searchEntries.forEach((user: any) => {
-      console.log(`- User: ${user.cn} (${user.userPrincipalName})`);
+      console.log(`- User: ${user.cn} (${user.userPrincipalName}), Object ID: ${user['msDS-aadObjectId']}`);
     });
 
   } catch (error) {
@@ -62,7 +62,8 @@ export async function importGroups() {
     const groupSearchOptions = {
       scope: 'sub' as const, // 'sub' for subtree search
       filter: '(objectClass=group)', // Filter for group objects
-      attributes: ['cn', 'member'], // 'member' attribute holds the DNs of members
+      // msDS-aadObjectId does not seem to be returned,  so still need to investigate how to get Object ID of groups
+      attributes: ['cn', 'member', 'msDS-aadObjectId'], // 'member' attribute holds the DNs of members
       paged: {
         pageSize: 1000,
       },
@@ -75,7 +76,7 @@ export async function importGroups() {
 
     groups.forEach((group: any) => {
       const members = group.member || []; // The 'member' attribute is an array of member DNs
-      console.log(`- Group: ${group.cn}, Members: ${members.length}`);
+      console.log(`- Group: ${group.cn}, Members: ${members.length}, Object ID: ${group['msDS-aadObjectId']}`);
       // In a real app, you would process and store this data
     });
 
