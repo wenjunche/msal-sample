@@ -1,7 +1,6 @@
 {
     "name": "copilot-chat--sample",
     "version": "0.1.0",
-    "homepage": "/build",    
     "dependencies": {
         "@azure/msal-browser": "4.25.1",
         "@azure/msal-react": "3.0.20",
@@ -18,7 +17,7 @@
         "react-router-dom": "7.9.4"
     },
     "scripts": {
-        "start": "react-scripts start",
+        "start": "set PORT=3001 && react-scripts start",
         "build": "react-scripts build",
         "test:e2e": "jest",
         "eject": "react-scripts eject"

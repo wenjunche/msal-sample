@@ -11,6 +11,7 @@ import { CustomNavigationClient } from "./utils/NavigationClient";
 import { PageLayout } from "./ui-components/PageLayout";
 import { Home } from "./pages/Home";
 import { Profile } from "./pages/Profile";
+import { Chat } from "./pages/Chat";
 
 type AppProps = {
     pca: IPublicClientApplication;
@@ -36,10 +37,9 @@ function App({ pca }: AppProps) {
 function Pages() {
     return (
         <Routes>
-            <Route path="/build/profile" element={<Profile />} />
-            {/* <Route path="/build/principal" element={<Principal />} /> */}
-            {/* <Route path="/build/contentstore" element={<ContentStore />} /> */}
-            <Route path="/build/" element={<Home />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/" element={<Home />} />
         </Routes>
     );
 }

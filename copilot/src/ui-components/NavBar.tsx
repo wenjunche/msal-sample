@@ -18,7 +18,7 @@ const NavBar = () => {
                             color="inherit"
                             variant="h6"
                         >
-                            Entra Integration
+                            Home
                         </Link>
                     </Typography>
                     <WelcomeName />

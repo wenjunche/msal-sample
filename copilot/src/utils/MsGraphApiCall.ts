@@ -1,6 +1,7 @@
 import { log } from "console";
 import { loginRequest, graphConfig } from "../authConfig";
 import { msalInstance } from "../index";
+import { text } from "stream/consumers";
 
 type GraphAPIRequest = {
     method?: string;
@@ -53,14 +54,33 @@ async function callMsGraph(request: GraphAPIRequest) {
         .catch(error => console.log(error));
 }
 
+type CopilotConversationAttribution = {
+    attributionSource: 'grounding' | 'model';
+    attributionType: 'citation' | 'annotation';
+    imageFavIcon: string;
+    imageWebUrl: string;
+    imageWidth: number;
+    providerDisplayName: string;
+    seeMoreWebUrl: string;
+}
+
+type CopilotConversationResponseMessage = {
+  id: string;
+  createdDateTime: string;
+  attributions: CopilotConversationAttribution[];
+  text: string;
+};
+
 type CopilotConversation = {
   id: string;
   createdDateTime: string;
-  lastMessageDateTime?: string;
-  title?: string;
+  displayName?: string;
+  messages?: CopilotConversationResponseMessage[];
+  state: string;
+  turnCount?: number;
 };
 
-type CopilotMessage = {
+export type CopilotMessage = {
   id?: string;
   content: string;
   role: "user" | "assistant";
@@ -81,6 +101,7 @@ type SharePointFileReference = {
   name: string;
 };
 
+
 export async function createCopilotConversation(): Promise<CopilotConversation> {
   const payload = {}; // Empty payload for creating a basic conversation
   const response = await callMsGraph({
@@ -88,20 +109,26 @@ export async function createCopilotConversation(): Promise<CopilotConversation> 
     method: "POST",
     payload
   }); 
-  return response;
+  return response as CopilotConversation;
 }
 
-export async function sendCopilotMessage(conversationId: string, message: string): Promise<CopilotMessage> {
+export async function sendCopilotMessage(conversationId: string, message: string): Promise<CopilotConversation> {
   const payload = {
-    content: message,
-    role: "user"
-  };  
+    message: {
+        '@odata.type': '#microsoft.graph.copilotConversationRequestMessageParameter',
+        text: message,
+    },
+    locationHint: {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }
+  };
+
   const response = await callMsGraph({
-    url: `${graphConfig.graphConversationEndpoint}/${conversationId}/messages`,
+    url: `${graphConfig.graphConversationEndpoint}/${conversationId}/chat`,
     method: "POST",
     payload
   }); 
-  return response;
+  return response as CopilotConversation;
 }
 
 export async function sendCopilotMessageWithSharePointFile(
@@ -139,7 +166,7 @@ export async function getCopilotMessages(conversationId: string): Promise<Copilo
   const response = await callMsGraph({
     url: `${graphConfig.graphConversationEndpoint}/${conversationId}/messages`
   });
-  
+  console.log("Fetched messages: ", response);
   return response.value;
 }
 

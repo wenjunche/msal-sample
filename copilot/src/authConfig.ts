@@ -3,9 +3,9 @@ import { Configuration, PopupRequest } from "@azure/msal-browser";
 // Config object to be passed to Msal on creation
 export const msalConfig: Configuration = {
     auth: {
-        clientId: "1ade5620-60da-450b-8100-e5ac80db97e8",
-        authority: "https://login.microsoftonline.com/051d23bf-9257-4c0c-b503-512ae19844dc",
-        redirectUri: "http://localhost/build",
+        clientId: process.env.REACT_APP_CLIENTID || "",
+        authority: process.env.REACT_APP_AUTHORITY || "",
+        redirectUri: "http://localhost:3001/",
         postLogoutRedirectUri: "/",
     },
     system: {
@@ -18,9 +18,12 @@ export const loginRequest: PopupRequest = {
     scopes: ["User.Read",
         "Files.Read.All", 
         "Sites.Read.All",
-        "ChatSession.ReadWrite",
-        "ChatMessage.Read",
-        "ChatMessage.Send"
+        "Mail.Read",
+        "People.Read.All",
+        "OnlineMeetingTranscript.Read.All",
+        "Chat.Read",
+        "ChannelMessage.Read.All",
+        "ExternalItem.Read.All"
     ],
 };
 

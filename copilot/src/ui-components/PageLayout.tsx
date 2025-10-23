@@ -9,7 +9,7 @@ export const PageLayout: React.FC<Props> = ({children}) => {
     return (
         <>
             <NavBar />
-            <Typography variant="h5" align="center">Enterprise Browser Admain App for Entra Integration</Typography>
+            <Typography variant="h5" align="center">Chat with MS365 Copilot</Typography>
             <br/>
             <br/>
             {children}
