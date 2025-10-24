@@ -119,7 +119,9 @@ const ChatContent = () => {
 };
 
 const preprocessCopilotText = (text: string) => {
-    return text
+       // Remove Copilot PUA markers
+    let cleaned = text.replace(/\uE200.*?\uE201/g, "");
+    return cleaned
         .replace(/<Event>(.*?)<\/Event>/g, '<span class="copilot-event">$1</span>')
         .replace(/<Person>(.*?)<\/Person>/g, '<span class="copilot-person">$1</span>')
         .replace(/<File>(.*?)<\/File>/g, '<span class="copilot-file">$1</span>');
