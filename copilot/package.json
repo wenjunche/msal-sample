@@ -15,7 +15,9 @@
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "react-markdown": "^8.0.5",
-        "react-router-dom": "7.9.4"
+        "react-router-dom": "7.9.4",
+        "remark-gfm": "4.0.1",
+        "rehype-raw": "6.1.1"
     },
     "scripts": {
         "start": "set PORT=3001 && react-scripts start",

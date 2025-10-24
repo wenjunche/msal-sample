@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 // Msal imports
 import { MsalAuthenticationTemplate, useMsal } from "@azure/msal-react";
@@ -116,6 +118,13 @@ const ChatContent = () => {
     );
 };
 
+const preprocessCopilotText = (text: string) => {
+    return text
+        .replace(/<Event>(.*?)<\/Event>/g, '<span class="copilot-event">$1</span>')
+        .replace(/<Person>(.*?)<\/Person>/g, '<span class="copilot-person">$1</span>')
+        .replace(/<File>(.*?)<\/File>/g, '<span class="copilot-file">$1</span>');
+}
+
 const ChatHistory = ({ messages }: { messages: CopilotConversationResponseMessage[] }) => {
 
     return (
@@ -142,7 +151,26 @@ const ChatHistory = ({ messages }: { messages: CopilotConversationResponseMessag
                 maxWidth: "75%",
                 }}
             >
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                        components={{
+                            span: ({node, className, children}: any) => {
+                                if (className === "copilot-event") {
+                                    return <span style={{ color: "#1976d2", fontWeight: 600 }}>{children}</span>;
+                                }
+                                if (className === "copilot-person") {
+                                    return <span style={{ color: "#388e3c", fontWeight: 600 }}>{children}</span>;
+                                }
+                                if (className === "copilot-file") {
+                                    return <span style={{ color: "#6d4c41", fontWeight: 600 }}>{children}</span>;
+                                }
+                                return <span>{children}</span>;
+                            }
+                        }}
+
+
+                >{preprocessCopilotText(msg.text)}</ReactMarkdown>
             </Paper>
             ))}
         </Box>        
