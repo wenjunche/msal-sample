@@ -118,13 +118,36 @@ const ChatContent = () => {
     );
 };
 
-const preprocessCopilotText = (text: string) => {
+const preprocessCopilotText = (text: string, attributions: any[] = []) => {
+    console.log("Preprocessing text: ", text);
        // Remove Copilot PUA markers
     let cleaned = text.replace(/\uE200.*?\uE201/g, "");
-    return cleaned
-        .replace(/<Event>(.*?)<\/Event>/g, '<span class="copilot-event">$1</span>')
-        .replace(/<Person>(.*?)<\/Person>/g, '<span class="copilot-person">$1</span>')
-        .replace(/<File>(.*?)<\/File>/g, '<span class="copilot-file">$1</span>');
+
+    // Replace <File>...</File> with markdown links if possible
+    cleaned = cleaned.replace(/<File>(.*?)<\/File>/g, (match, fileName) => {
+        const attr = attributions.find(a =>
+            a.attributionType === "citation" && a.providerDisplayName === fileName
+        );
+        if (attr && attr.seeMoreWebUrl) {
+            return `[${fileName}](${attr.seeMoreWebUrl})`;
+        }
+        return `**${fileName}**`;
+    });
+
+    // Replace <Event>...</Event> and <Person>...</Person> with markdown bold and a marker
+    cleaned = cleaned
+        .replace(/<Event>(.*?)<\/Event>/g, '**$1**')
+        .replace(/<Person>(.*?)<\/Person>/g, '*$1*');
+
+
+   // Fix quadruple asterisks (****text****) to double asterisks (**text**)
+    cleaned = cleaned.replace(/\*{4}(.*?)\*{4}/g, '**$1**');
+
+    // Optionally, fix triple asterisks (***text***) to bold+italic or just bold
+    cleaned = cleaned.replace(/\*{3}(.*?)\*{3}/g, '**$1**');
+
+    console.log("Cleaned text: ", cleaned);
+    return cleaned;
 }
 
 const ChatHistory = ({ messages }: { messages: CopilotConversationResponseMessage[] }) => {
@@ -155,24 +178,9 @@ const ChatHistory = ({ messages }: { messages: CopilotConversationResponseMessag
             >
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeRaw]}
-                        components={{
-                            span: ({node, className, children}: any) => {
-                                if (className === "copilot-event") {
-                                    return <span style={{ color: "#1976d2", fontWeight: 600 }}>{children}</span>;
-                                }
-                                if (className === "copilot-person") {
-                                    return <span style={{ color: "#388e3c", fontWeight: 600 }}>{children}</span>;
-                                }
-                                if (className === "copilot-file") {
-                                    return <span style={{ color: "#6d4c41", fontWeight: 600 }}>{children}</span>;
-                                }
-                                return <span>{children}</span>;
-                            }
-                        }}
-
-
-                >{preprocessCopilotText(msg.text)}</ReactMarkdown>
+                    rehypePlugins={[]}>
+                    {preprocessCopilotText(msg.text || '', msg.attributions)}
+                </ReactMarkdown>
             </Paper>
             ))}
         </Box>        
