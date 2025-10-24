@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 // Msal imports
 import { MsalAuthenticationTemplate, useMsal } from "@azure/msal-react";
@@ -9,11 +10,11 @@ import { loginRequest } from "../authConfig";
 import { ProfileData, GraphData } from "../ui-components/ProfileData";
 import { Loading } from "../ui-components/Loading";
 import { ErrorComponent } from "../ui-components/ErrorComponent";
-import { callMeGraph, CopilotMessage, createCopilotConversation, sendCopilotMessage } from "../utils/MsGraphApiCall";
+import { callMeGraph, CopilotConversationResponseMessage, CopilotMessage, createCopilotConversation, sendCopilotMessage } from "../utils/MsGraphApiCall";
 
 // Material-ui imports
 import Paper from "@mui/material/Paper";
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControlLabel, FormGroup, Stack, TextField, Typography } from "@mui/material";
 import { useCopilotMessages } from "../ui-components/useCopilotMessages.tsx";
 
 const ChatContent = () => {
@@ -21,6 +22,9 @@ const ChatContent = () => {
     const [graphData, setGraphData] = useState<null|GraphData>(null);
     const [copilotConversationId, setCopilotConversationId] = useState<string>('');
     const [input, setInput] = useState("");
+    const [copilotResponses, setCopilotResponses] = useState<CopilotConversationResponseMessage[]>([]);
+    const [enterpriseChecked, setEnterpriseChecked] = useState(true);
+    const [webChecked, setWebChecked] = useState(false);
 
     useEffect(() => {
         if (!graphData && inProgress === InteractionStatus.None) {
@@ -42,9 +46,7 @@ const ChatContent = () => {
             if (graphData) {
                 const conversation = await createCopilotConversation();
                 console.log("Created Copilot conversation: ", conversation);
-                setCopilotConversationId(conversation.id);
-                const response = await sendCopilotMessage(conversation.id, "Hello Copilot!");
-                console.log("Sent message to Copilot: ", response);
+                setCopilotConversationId(conversation.id);                
             }
         };
         initCopilotConversation();
@@ -52,15 +54,21 @@ const ChatContent = () => {
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
-        e.preventDefault();
-        handleSend();
+            e.preventDefault();
+            handleSend();
         }
     };
     const handleSend = async () => {
         if (input.trim() === "" || copilotConversationId === "") return;
         try {
-            const response = await sendCopilotMessage(copilotConversationId, input);
+            const response = await sendCopilotMessage(copilotConversationId, input, { 
+                enterprise: enterpriseChecked, 
+                web: webChecked, 
+            });
             console.log("Sent message to Copilot: ", response);
+            if (response.messages) {
+                setCopilotResponses(response.messages);
+            }
             setInput("");
         } catch (error) {
             console.error("Error sending message to Copilot: ", error);
@@ -70,7 +78,7 @@ const ChatContent = () => {
     return (
         <Box
             sx={{
-                width: 400,
+                width: 600,
                 height: 500,
                 border: "1px solid #ccc",
                 borderRadius: 2,
@@ -79,9 +87,9 @@ const ChatContent = () => {
                 p: 2,
             }}
         >
-            {/* {copilotConversationId ?
-                <ChatHistory conversationId={copilotConversationId} />
-            : null} */}
+            {copilotConversationId ?
+                <ChatHistory messages={copilotResponses} />
+            : null}
             <Stack direction="row" spacing={1}>
                 <TextField
                     fullWidth
@@ -95,12 +103,20 @@ const ChatContent = () => {
                 Send
                 </Button>
             </Stack>
+            <FormGroup row sx={{ mt: 1, justifyContent: "center" }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Grounding:
+                    </Typography>
+                    {/* <FormControlLabel control={<Checkbox checked={enterpriseChecked} onChange={(e) => setEnterpriseChecked(e.target.checked)} />} label="Enterprise" /> */}
+                    <FormControlLabel control={<Checkbox checked={webChecked} onChange={(e) => setWebChecked(e.target.checked)} />} label="Web" />
+                </Stack>
+            </FormGroup>
         </Box>
     );
 };
 
-const ChatHistory = ({ conversationId }: { conversationId: string }) => {
-    const { messages, loading, error } = useCopilotMessages(conversationId, 8000)
+const ChatHistory = ({ messages }: { messages: CopilotConversationResponseMessage[] }) => {
 
     return (
         <Box
@@ -117,16 +133,16 @@ const ChatHistory = ({ conversationId }: { conversationId: string }) => {
             <Paper
                 key={i}
                 sx={{
-                alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                bgcolor: msg.role === "user" ? "primary.main" : "grey.300",
-                color: msg.role === "user" ? "white" : "black",
+                alignSelf: i === 0 ? "flex-end" : "flex-start",
+                bgcolor: i === 0 ? "primary.main" : "grey.300",
+                color: i === 0 ? "white" : "black",
                 px: 1.5,
                 py: 0.5,
                 borderRadius: 2,
                 maxWidth: "75%",
                 }}
             >
-                <Typography variant="body2">{msg.content}</Typography>
+                <ReactMarkdown>{msg.text}</ReactMarkdown>
             </Paper>
             ))}
         </Box>        

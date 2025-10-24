@@ -64,14 +64,14 @@ type CopilotConversationAttribution = {
     seeMoreWebUrl: string;
 }
 
-type CopilotConversationResponseMessage = {
+export type CopilotConversationResponseMessage = {
   id: string;
   createdDateTime: string;
   attributions: CopilotConversationAttribution[];
   text: string;
 };
 
-type CopilotConversation = {
+export type CopilotConversation = {
   id: string;
   createdDateTime: string;
   displayName?: string;
@@ -112,7 +112,9 @@ export async function createCopilotConversation(): Promise<CopilotConversation> 
   return response as CopilotConversation;
 }
 
-export async function sendCopilotMessage(conversationId: string, message: string): Promise<CopilotConversation> {
+type GroundingOption = { enterprise: boolean; web: boolean; };
+
+export async function sendCopilotMessage(conversationId: string, message: string, grounding: GroundingOption): Promise<CopilotConversation> {
   const payload = {
     message: {
         '@odata.type': '#microsoft.graph.copilotConversationRequestMessageParameter',
@@ -120,6 +122,11 @@ export async function sendCopilotMessage(conversationId: string, message: string
     },
     locationHint: {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    },
+    contextualResources: {
+        webContext: {
+            isWebEnabled: grounding.web
+        }
     }
   };
 
